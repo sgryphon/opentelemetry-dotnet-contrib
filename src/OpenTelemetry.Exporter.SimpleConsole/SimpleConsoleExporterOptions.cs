@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-using System.IO;
+#nullable enable
 
 namespace OpenTelemetry.Exporter.SimpleConsole;
 
@@ -13,5 +13,5 @@ public class SimpleConsoleExporterOptions
     /// <summary>
     /// Gets or sets the text writer to use for output. Defaults to Console.Out.
     /// </summary>
-    public TextWriter Writer { get; set; } = Console.Out;
+    public System.IO.TextWriter Writer { get; set; } = System.Console.Out;
 }

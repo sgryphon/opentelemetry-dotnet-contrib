@@ -1,0 +1,4 @@
+#nullable enable
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporter
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions
+OpenTelemetry.Logs.SimpleConsoleLoggingExtensions

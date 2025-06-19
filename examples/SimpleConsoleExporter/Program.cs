@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using OpenTelemetry.Logs;
 
 namespace Examples.SimpleConsoleExporter;
@@ -19,6 +20,14 @@ public class Program
 
     public static async Task Main(string[] args)
     {
+        // Add ActivitySource listener to enable activity creation
+        var listener = new ActivityListener
+        {
+            ShouldListenTo = _ => true,
+            Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
+        };
+        ActivitySource.AddActivityListener(listener);
+
         var loggerType = ParseLoggerType(args);
         var timestampFormat = ParseTimestampFormat(args);
 

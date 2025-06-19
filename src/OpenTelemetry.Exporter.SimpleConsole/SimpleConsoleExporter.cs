@@ -32,8 +32,16 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
         foreach (var logRecord in batch)
         {
             var severity = GetSeverityString(logRecord.LogLevel);
-            var message = logRecord.FormattedMessage ?? string.Empty;
-            writer.WriteLine($"{severity}: {message}");
+            var category = logRecord.CategoryName ?? string.Empty;
+            var eventId = logRecord.EventId.Id;
+
+            // Use FormattedMessage if available, otherwise fall back to Body
+            var message = !string.IsNullOrEmpty(logRecord.FormattedMessage)
+                ? logRecord.FormattedMessage
+                : logRecord.Body?.ToString() ?? string.Empty;
+
+            writer.WriteLine($"{severity}: {category}[{eventId}]");
+            writer.WriteLine($"      {message}");
         }
 
         return ExportResult.Success;

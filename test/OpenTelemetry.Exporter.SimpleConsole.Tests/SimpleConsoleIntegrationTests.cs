@@ -1,7 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-using System.IO;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
@@ -30,7 +29,9 @@ public class SimpleConsoleIntegrationTests
         var logger = loggerFactory.CreateLogger<SimpleConsoleIntegrationTests>();
         var message = "Test log message from SimpleConsole exporter";
 
+#pragma warning disable CA2254 // Template should be a static string
         logger.LogInformation(message);
+#pragma warning restore CA2254 // Template should be a static string
 
         // Assert
         var output = stringWriter.ToString();
@@ -63,7 +64,9 @@ public class SimpleConsoleIntegrationTests
 
         // Act
         var logger = loggerFactory.CreateLogger(category);
+#pragma warning disable CA2254 // Template should be a static string
         logger.Log(logLevel, new EventId(eventId), message);
+#pragma warning restore CA2254 // Template should be a static string
 
         // Assert
         var output = stringWriter.ToString();

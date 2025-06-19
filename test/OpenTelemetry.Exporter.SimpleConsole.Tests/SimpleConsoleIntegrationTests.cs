@@ -1,10 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
 using Xunit;
+using System.Linq;
 
 namespace OpenTelemetry.Exporter.SimpleConsole.Tests;
 
@@ -181,5 +183,42 @@ public class SimpleConsoleIntegrationTests
 
         // Should start with a timestamp in the given format
         Assert.Matches(@"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} info: ", lines[0]);
+    }
+
+    [Fact]
+    public void ActivityContextOutputTest()
+    {
+        // Arrange
+        var mockConsole = new MockConsole();
+        var listener = new ActivityListener
+        {
+            ShouldListenTo = _ => true,
+            Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
+        };
+        ActivitySource.AddActivityListener(listener);
+        using var loggerFactory = LoggerFactory.Create(logging => logging
+            .AddOpenTelemetry(options =>
+            {
+                options.AddSimpleConsoleExporter(configure =>
+                {
+                    configure.Console = mockConsole;
+                });
+            }));
+
+        // Act
+        var logger = loggerFactory.CreateLogger<SimpleConsoleIntegrationTests>();
+        using var activitySource = new ActivitySource("TestActivitySource");
+        using var activity = activitySource.StartActivity("TestActivity");
+
+        // Log the activity ID in the message, as in the example
+        var message = $"Activity {activity?.Id} started";
+        logger.LogInformation(message);
+
+        // Assert
+        var output = mockConsole.GetOutput();
+        var lines = Regex.Split(output, "\r?\n");
+        var activityLine = lines.FirstOrDefault(l => l.Contains("Activity"));
+        Assert.NotNull(activityLine);
+        Assert.Matches(@"Activity 00-[0-9a-f]{32}-[0-9a-f]{16}-00 started", activityLine);
     }
 }

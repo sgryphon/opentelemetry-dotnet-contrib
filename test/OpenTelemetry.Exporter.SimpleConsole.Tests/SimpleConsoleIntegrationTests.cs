@@ -72,4 +72,34 @@ public class SimpleConsoleIntegrationTests
         Assert.StartsWith($"{expectedSeverity}: {category}[{eventId}]", lines[0].Trim());
         Assert.Equal($"      {message}", lines[1].TrimEnd());
     }
+
+    [Fact]
+    public void StructuredLoggingWithSemanticArgumentsTest()
+    {
+        // Arrange
+        using var stringWriter = new StringWriter();
+        using var loggerFactory = LoggerFactory.Create(logging => logging
+            .SetMinimumLevel(LogLevel.Trace)
+            .AddOpenTelemetry(options =>
+            {
+                options.IncludeFormattedMessage = true;
+                options.AddSimpleConsoleExporter(configure =>
+                {
+                    configure.Writer = stringWriter;
+                });
+            }));
+
+        // Act
+        var logger = loggerFactory.CreateLogger<SimpleConsoleIntegrationTests>();
+        var userName = "Alice";
+        var userId = 12345;
+        logger.LogInformation("User {UserName} with ID {UserId} logged in", userName, userId);
+
+        // Assert
+        var output = stringWriter.ToString();
+
+        var lines = Regex.Split(output, "\r?\n");
+        Assert.StartsWith("info: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());
+        Assert.Equal("      User Alice with ID 12345 logged in", lines[1].TrimEnd());
+    }
 }

@@ -110,4 +110,45 @@ public class SimpleConsoleIntegrationTests
         Assert.StartsWith("info: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());
         Assert.Equal("      User Alice with ID 12345 logged in", lines[1].TrimEnd());
     }
+
+    [Fact]
+    public void ExceptionLogIntegrationTest()
+    {
+        // Arrange
+        var mockConsole = new MockConsole();
+        using var loggerFactory = LoggerFactory.Create(logging => logging
+            .AddOpenTelemetry(options =>
+            {
+                options.AddSimpleConsoleExporter(configure =>
+                {
+                    configure.Console = mockConsole;
+                });
+            }));
+
+        // Act
+        var logger = loggerFactory.CreateLogger<SimpleConsoleIntegrationTests>();
+        var message = "This is an error with exception";
+        Exception ex;
+        try
+        {
+            throw new InvalidOperationException("Something went wrong!");
+        }
+        catch (Exception caught)
+        {
+            ex = caught;
+        }
+
+#pragma warning disable CA2254 // Template should be a static string
+        logger.LogError(ex, message);
+#pragma warning restore CA2254 // Template should be a static string
+
+        // Assert
+        var output = mockConsole.GetOutput();
+        var lines = Regex.Split(output, "\r?\n");
+        Assert.StartsWith("fail: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());
+        Assert.Equal($"      {message}", lines[1].TrimEnd());
+        Assert.Contains("System.InvalidOperationException: Something went wrong!", output);
+        // Should contain at least one stack trace line, indented
+        Assert.Contains("      at ", output);
+    }
 }

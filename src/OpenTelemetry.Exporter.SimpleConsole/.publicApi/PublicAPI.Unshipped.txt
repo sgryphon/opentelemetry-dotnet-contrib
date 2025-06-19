@@ -1,4 +1,10 @@
 #nullable enable
 OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporter
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporter.SimpleConsoleExporter(OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions! options) -> void
+override OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporter.Export(in OpenTelemetry.Batch<OpenTelemetry.Logs.LogRecord!> batch) -> OpenTelemetry.ExportResult
 OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.SimpleConsoleExporterOptions() -> void
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.Writer.get -> System.IO.TextWriter!
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.Writer.set -> void
 OpenTelemetry.Logs.SimpleConsoleLoggingExtensions
+static OpenTelemetry.Logs.SimpleConsoleLoggingExtensions.AddSimpleConsoleExporter(this OpenTelemetry.Logs.OpenTelemetryLoggerOptions! options, System.Action<OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions!>? configure = null) -> OpenTelemetry.Logs.OpenTelemetryLoggerOptions!

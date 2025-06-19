@@ -40,10 +40,12 @@ public class SimpleConsoleIntegrationTests
         Assert.StartsWith("info: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());
         Assert.Equal($"      {message}", lines[1].TrimEnd());
 
-        // Verify color changes: one for severity color (Green for "info"), one for restore to default
-        Assert.Equal(2, mockConsole.ColorChanges.Count);
-        Assert.Equal(("Foreground", ConsoleColor.Green), mockConsole.ColorChanges[0]); // Severity color
-        Assert.Equal(("Foreground", ConsoleColor.White), mockConsole.ColorChanges[1]); // Restore to default
+        // Verify color changes: fg and bg for severity, then restore both
+        Assert.Equal(4, mockConsole.ColorChanges.Count);
+        Assert.Equal(("Foreground", ConsoleColor.DarkGreen), mockConsole.ColorChanges[0]); // Severity fg
+        Assert.Equal(("Background", ConsoleColor.Black), mockConsole.ColorChanges[1]); // Severity bg
+        Assert.Equal(("Foreground", ConsoleColor.White), mockConsole.ColorChanges[2]); // Restore fg
+        Assert.Equal(("Background", ConsoleColor.Black), mockConsole.ColorChanges[3]); // Restore bg
     }
 
     [Theory]
@@ -148,7 +150,36 @@ public class SimpleConsoleIntegrationTests
         Assert.StartsWith("fail: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());
         Assert.Equal($"      {message}", lines[1].TrimEnd());
         Assert.Contains("System.InvalidOperationException: Something went wrong!", output);
+
         // Should contain at least one stack trace line, indented
         Assert.Contains("      at ", output);
+    }
+
+    [Fact]
+    public void TimestampOutputTest()
+    {
+        // Arrange
+        var mockConsole = new MockConsole();
+        using var loggerFactory = LoggerFactory.Create(logging => logging
+            .AddOpenTelemetry(options =>
+            {
+                options.AddSimpleConsoleExporter(configure =>
+                {
+                    configure.Console = mockConsole;
+                    configure.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
+                    configure.UseUtcTimestamp = true;
+                });
+            }));
+
+        // Act
+        var logger = loggerFactory.CreateLogger<SimpleConsoleIntegrationTests>();
+        logger.LogInformation("Timestamped log message");
+
+        // Assert
+        var output = mockConsole.GetOutput();
+        var lines = Regex.Split(output, "\r?\n");
+
+        // Should start with a timestamp in the given format
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} info: ", lines[0]);
     }
 }

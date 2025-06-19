@@ -3,6 +3,7 @@
 
 #nullable enable
 
+using System.Globalization;
 using OpenTelemetry.Logs;
 
 namespace OpenTelemetry.Exporter.SimpleConsole;
@@ -12,6 +13,7 @@ namespace OpenTelemetry.Exporter.SimpleConsole;
 /// </summary>
 public class SimpleConsoleExporter : BaseExporter<LogRecord>
 {
+    private static readonly char[] ExceptionSplitChars = new[] { '\r', '\n' };
     private readonly SimpleConsoleExporterOptions options;
 
     /// <summary>
@@ -42,8 +44,7 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
             // Write timestamp if configured
             if (!string.IsNullOrEmpty(this.options.TimestampFormat))
             {
-                var now = this.options.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
-                var timestamp = now.ToString(this.options.TimestampFormat!);
+                var timestamp = logRecord.Timestamp.ToString(this.options.TimestampFormat!, CultureInfo.InvariantCulture);
                 console.Write(timestamp);
             }
 
@@ -60,7 +61,7 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
             // Output exception details if present, indented
             if (logRecord.Exception != null)
             {
-                var exceptionLines = logRecord.Exception.ToString().Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);
+                var exceptionLines = logRecord.Exception.ToString().Split(ExceptionSplitChars, System.StringSplitOptions.RemoveEmptyEntries);
                 foreach (var line in exceptionLines)
                 {
                     console.WriteLine($"      {line}");

@@ -10,25 +10,89 @@ namespace Examples.SimpleConsoleExporter;
 
 public class Program
 {
+    // Usage:
+    //   --logger otel-simpleconsole   (default, OpenTelemetry SimpleConsoleExporter)
+    //   --logger otel-console        (OpenTelemetry ConsoleExporter)
+    //   --logger default              (.NET Console logger, or use 'dotnet')
+    //   --logger dotnet-json         (.NET Console logger, JSON formatter)
+    //   --logger dotnet-systemd       (.NET Console logger, Syslog formatter)
+
     public static async Task Main(string[] args)
     {
-        var host = Host.CreateDefaultBuilder(args)
+        var loggerType = ParseLoggerType(args);
+
+        var builder = Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>
             {
                 services.AddSingleton(TimeProvider.System);
                 services.AddHostedService<Worker>();
-            })
-            .ConfigureLogging(logging =>
-            {
-                logging.ClearProviders();
-                logging.AddOpenTelemetry(options =>
-                {
-                    options.AddSimpleConsoleExporter();
-                });
-                logging.SetMinimumLevel(LogLevel.Trace);
-            })
-            .Build();
+            });
 
+        switch (loggerType)
+        {
+            case "DOTNET":
+            case "DEFAULT":
+                // Use default .NET logger, do not clear providers
+                builder.ConfigureLogging(logging =>
+                {
+                    logging.SetMinimumLevel(LogLevel.Trace);
+                });
+                break;
+            case "DOTNET-JSON":
+                builder.ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.AddJsonConsole();
+                    logging.SetMinimumLevel(LogLevel.Trace);
+                });
+                break;
+            case "DOTNET-SYSTEMD":
+                builder.ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.AddSystemdConsole();
+                    logging.SetMinimumLevel(LogLevel.Trace);
+                });
+                break;
+            case "OTEL-CONSOLE":
+                builder.ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.AddOpenTelemetry(options => options.AddConsoleExporter());
+                    logging.SetMinimumLevel(LogLevel.Trace);
+                });
+                break;
+            case "OTEL-SIMPLECONSOLE":
+            default:
+                builder.ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.AddOpenTelemetry(options => options.AddSimpleConsoleExporter());
+                    logging.SetMinimumLevel(LogLevel.Trace);
+                });
+                break;
+        }
+
+        var host = builder.Build();
         await host.RunAsync();
+    }
+
+    private static string ParseLoggerType(string[] args)
+    {
+        System.Console.WriteLine($"Args: {string.Join(", ", args)}");
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i].Equals("--logger", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                var value = args[i + 1].ToUpperInvariant();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+        }
+
+        return string.Empty;
     }
 }

@@ -25,14 +25,20 @@ public class Worker(
         await Task.Delay(100, cancellationToken);
 
         logger.LogTrace("This is a trace message");
-        logger.LogDebug("This is a debug message");
-        logger.LogInformation("This is an info message");
-        logger.LogWarning("This is a warning message");
-        logger.LogError("This is an error message");
-        logger.LogCritical("This is a critical message");
 
         // Structured logging
-        logger.LogInformation("User {UserId} performed {Action} at {Time}", 42, "Login", timeProvider.GetUtcNow());
+        logger.LogDebug("Debug: User {UserId} performed {Action} at {Time}", 42, "Login", timeProvider.GetUtcNow());
+
+        // ActivitySource tracing
+        using (var activity = ActivitySource.StartActivity("SampleOperation", ActivityKind.Internal))
+        {
+            activity?.SetTag("sample.tag", "value");
+            logger.LogInformation("Activity {ActivityId} started at {Time}", activity?.Id, timeProvider.GetUtcNow());
+
+            // Simulate some work
+            Task.Delay(100, cancellationToken).Wait(cancellationToken);
+            logger.LogWarning("Activity finished warning");
+        }
 
         // Exception logging
         try
@@ -47,7 +53,7 @@ public class Worker(
         // Logging with a scope
         using (logger.BeginScope("ScopeId: {ScopeId}", Guid.NewGuid()))
         {
-            logger.LogInformation("This log is inside a scope");
+            logger.LogCritical("This critical log is inside a scope");
         }
 
         // Logging with custom state (dictionary)
@@ -57,22 +63,11 @@ public class Worker(
             ["CustomKey2"] = 1234,
         };
         logger.Log(
-            LogLevel.Information,
+            LogLevel.Debug,
             new EventId(1001, "CustomStateEvent"),
             customState,
             null,
             (state, ex) => $"This log has custom state: {state["CustomKey1"]}");
-
-        // ActivitySource tracing
-        using (var activity = ActivitySource.StartActivity("SampleOperation", ActivityKind.Internal))
-        {
-            activity?.SetTag("sample.tag", "value");
-            logger.LogInformation("Activity {ActivityId} started at {Time}", activity?.Id, timeProvider.GetUtcNow());
-
-            // Simulate some work
-            Task.Delay(100, cancellationToken).Wait(cancellationToken);
-            logger.LogInformation("Activity finished");
-        }
 
         // Short delay before stopping
         await Task.Delay(100, cancellationToken);

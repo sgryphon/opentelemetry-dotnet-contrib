@@ -6,7 +6,6 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
 using Xunit;
-using System.Linq;
 
 namespace OpenTelemetry.Exporter.SimpleConsole.Tests;
 
@@ -29,18 +28,15 @@ public class SimpleConsoleIntegrationTests
 
         // Act
         var logger = loggerFactory.CreateLogger<SimpleConsoleIntegrationTests>();
-        var message = "Test log message from SimpleConsole exporter";
 
-#pragma warning disable CA2254 // Template should be a static string
-        logger.LogInformation(message);
-#pragma warning restore CA2254 // Template should be a static string
+        logger.LogInformation("Test log message from SimpleConsole exporter");
 
         // Assert
         var output = mockConsole.GetOutput();
 
         var lines = Regex.Split(output, "\r?\n");
         Assert.StartsWith("info: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());
-        Assert.Equal($"      {message}", lines[1].TrimEnd());
+        Assert.Equal($"      Test log message from SimpleConsole exporter", lines[1].TrimEnd());
 
         // Verify color changes: fg and bg for severity, then restore both
         Assert.Equal(4, mockConsole.ColorChanges.Count);
@@ -131,7 +127,6 @@ public class SimpleConsoleIntegrationTests
 
         // Act
         var logger = loggerFactory.CreateLogger<SimpleConsoleIntegrationTests>();
-        var message = "This is an error with exception";
         Exception ex;
         try
         {
@@ -142,15 +137,13 @@ public class SimpleConsoleIntegrationTests
             ex = caught;
         }
 
-#pragma warning disable CA2254 // Template should be a static string
-        logger.LogError(ex, message);
-#pragma warning restore CA2254 // Template should be a static string
+        logger.LogError(ex, "This is an error with exception");
 
         // Assert
         var output = mockConsole.GetOutput();
         var lines = Regex.Split(output, "\r?\n");
         Assert.StartsWith("fail: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());
-        Assert.Equal($"      {message}", lines[1].TrimEnd());
+        Assert.Equal($"      This is an error with exception", lines[1].TrimEnd());
         Assert.Contains("System.InvalidOperationException: Something went wrong!", output);
 
         // Should contain at least one stack trace line, indented
@@ -199,6 +192,7 @@ public class SimpleConsoleIntegrationTests
         using var loggerFactory = LoggerFactory.Create(logging => logging
             .AddOpenTelemetry(options =>
             {
+                options.IncludeFormattedMessage = true;
                 options.AddSimpleConsoleExporter(configure =>
                 {
                     configure.Console = mockConsole;
@@ -211,8 +205,7 @@ public class SimpleConsoleIntegrationTests
         using var activity = activitySource.StartActivity("TestActivity");
 
         // Log the activity ID in the message, as in the example
-        var message = $"Activity {activity?.Id} started";
-        logger.LogInformation(message);
+        logger.LogInformation("Activity {ActivityId} started", activity?.Id);
 
         // Assert
         var output = mockConsole.GetOutput();

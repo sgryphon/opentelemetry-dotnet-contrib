@@ -46,6 +46,16 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
             console.ForegroundColor = originalColor;
             console.WriteLine($": {category}[{eventId}]");
             console.WriteLine($"      {message}");
+
+            // Output exception details if present, indented
+            if (logRecord.Exception != null)
+            {
+                var exceptionLines = logRecord.Exception.ToString().Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);
+                foreach (var line in exceptionLines)
+                {
+                    console.WriteLine($"      {line}");
+                }
+            }
         }
 
         return ExportResult.Success;

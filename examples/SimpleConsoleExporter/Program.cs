@@ -20,6 +20,7 @@ public class Program
     public static async Task Main(string[] args)
     {
         var loggerType = ParseLoggerType(args);
+        var timestampFormat = ParseTimestampFormat(args);
 
         var builder = Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>
@@ -32,17 +33,29 @@ public class Program
         {
             case "DOTNET":
             case "DEFAULT":
-                // Use default .NET logger, do not clear providers
                 builder.ConfigureLogging(logging =>
                 {
-                    logging.SetMinimumLevel(LogLevel.Trace);
+                    if (!string.IsNullOrEmpty(timestampFormat))
+                    {
+                        logging.ClearProviders();
+                        logging.AddSimpleConsole(options =>
+                        {
+                            options.TimestampFormat = timestampFormat;
+                        });
+                    }
                 });
                 break;
             case "DOTNET-JSON":
                 builder.ConfigureLogging(logging =>
                 {
                     logging.ClearProviders();
-                    logging.AddJsonConsole();
+                    logging.AddJsonConsole(options =>
+                    {
+                        if (!string.IsNullOrEmpty(timestampFormat))
+                        {
+                            options.TimestampFormat = timestampFormat;
+                        }
+                    });
                     logging.SetMinimumLevel(LogLevel.Trace);
                 });
                 break;
@@ -74,7 +87,13 @@ public class Program
                     logging.AddOpenTelemetry(options =>
                     {
                         options.IncludeFormattedMessage = true;
-                        options.AddSimpleConsoleExporter();
+                        options.AddSimpleConsoleExporter(exporterOptions =>
+                        {
+                            if (!string.IsNullOrEmpty(timestampFormat))
+                            {
+                                exporterOptions.TimestampFormat = timestampFormat;
+                            }
+                        });
                     });
                     logging.SetMinimumLevel(LogLevel.Trace);
                 });
@@ -87,20 +106,33 @@ public class Program
 
     private static string ParseLoggerType(string[] args)
     {
-        System.Console.WriteLine($"Args: {string.Join(", ", args)}");
-
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i].Equals("--logger", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
                 var value = args[i + 1].ToUpperInvariant();
-                if (!string.IsNullOrWhiteSpace(value))
+                if (string.IsNullOrWhiteSpace(value))
                 {
-                    return value;
+                    return "OTEL-SIMPLECONSOLE";
                 }
+
+                return value;
             }
         }
 
-        return string.Empty;
+        return "OTEL-SIMPLECONSOLE";
+    }
+
+    private static string? ParseTimestampFormat(string[] args)
+    {
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i].Equals("--timestamp", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                return args[i + 1];
+            }
+        }
+
+        return null;
     }
 }

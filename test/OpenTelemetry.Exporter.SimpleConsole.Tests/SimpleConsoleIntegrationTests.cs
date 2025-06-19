@@ -15,13 +15,13 @@ public class SimpleConsoleIntegrationTests
     public void BasicLogIntegrationTest()
     {
         // Arrange
-        using var stringWriter = new StringWriter();
+        var mockConsole = new MockConsole();
         using var loggerFactory = LoggerFactory.Create(logging => logging
             .AddOpenTelemetry(options =>
             {
                 options.AddSimpleConsoleExporter(configure =>
                 {
-                    configure.Writer = stringWriter;
+                    configure.Console = mockConsole;
                 });
             }));
 
@@ -34,11 +34,16 @@ public class SimpleConsoleIntegrationTests
 #pragma warning restore CA2254 // Template should be a static string
 
         // Assert
-        var output = stringWriter.ToString();
+        var output = mockConsole.GetOutput();
 
         var lines = Regex.Split(output, "\r?\n");
         Assert.StartsWith("info: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());
         Assert.Equal($"      {message}", lines[1].TrimEnd());
+
+        // Verify color changes: one for severity color (Green for "info"), one for restore to default
+        Assert.Equal(2, mockConsole.ColorChanges.Count);
+        Assert.Equal(("Foreground", ConsoleColor.Green), mockConsole.ColorChanges[0]); // Severity color
+        Assert.Equal(("Foreground", ConsoleColor.White), mockConsole.ColorChanges[1]); // Restore to default
     }
 
     [Theory]
@@ -51,14 +56,14 @@ public class SimpleConsoleIntegrationTests
     public void LogLevelAndFormatTheoryTest(LogLevel logLevel, string category, int eventId, string message, string expectedSeverity)
     {
         // Arrange
-        using var stringWriter = new StringWriter();
+        var mockConsole = new MockConsole();
         using var loggerFactory = LoggerFactory.Create(logging => logging
             .SetMinimumLevel(LogLevel.Trace)
             .AddOpenTelemetry(options =>
             {
                 options.AddSimpleConsoleExporter(configure =>
                 {
-                    configure.Writer = stringWriter;
+                    configure.Console = mockConsole;
                 });
             }));
 
@@ -69,7 +74,7 @@ public class SimpleConsoleIntegrationTests
 #pragma warning restore CA2254 // Template should be a static string
 
         // Assert
-        var output = stringWriter.ToString();
+        var output = mockConsole.GetOutput();
 
         var lines = Regex.Split(output, "\r?\n");
         Assert.StartsWith($"{expectedSeverity}: {category}[{eventId}]", lines[0].Trim());
@@ -80,7 +85,7 @@ public class SimpleConsoleIntegrationTests
     public void StructuredLoggingWithSemanticArgumentsTest()
     {
         // Arrange
-        using var stringWriter = new StringWriter();
+        var mockConsole = new MockConsole();
         using var loggerFactory = LoggerFactory.Create(logging => logging
             .SetMinimumLevel(LogLevel.Trace)
             .AddOpenTelemetry(options =>
@@ -88,7 +93,7 @@ public class SimpleConsoleIntegrationTests
                 options.IncludeFormattedMessage = true;
                 options.AddSimpleConsoleExporter(configure =>
                 {
-                    configure.Writer = stringWriter;
+                    configure.Console = mockConsole;
                 });
             }));
 
@@ -99,7 +104,7 @@ public class SimpleConsoleIntegrationTests
         logger.LogInformation("User {UserName} with ID {UserId} logged in", userName, userId);
 
         // Assert
-        var output = stringWriter.ToString();
+        var output = mockConsole.GetOutput();
 
         var lines = Regex.Split(output, "\r?\n");
         Assert.StartsWith("info: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());

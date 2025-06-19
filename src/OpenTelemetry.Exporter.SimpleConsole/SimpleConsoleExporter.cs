@@ -26,7 +26,7 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
     /// <inheritdoc/>
     public override ExportResult Export(in Batch<LogRecord> batch)
     {
-        var writer = this.options.Writer ?? Console.Out;
+        var console = this.options.Console;
 
         foreach (var logRecord in batch)
         {
@@ -39,8 +39,13 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
                 ? logRecord.FormattedMessage
                 : logRecord.Body?.ToString() ?? string.Empty;
 
-            writer.WriteLine($"{severity}: {category}[{eventId}]");
-            writer.WriteLine($"      {message}");
+            // Write severity in color, then rest of the line in default color
+            var originalColor = console.ForegroundColor;
+            console.ForegroundColor = GetSeverityColor(severity);
+            console.Write(severity);
+            console.ForegroundColor = originalColor;
+            console.WriteLine($": {category}[{eventId}]");
+            console.WriteLine($"      {message}");
         }
 
         return ExportResult.Success;
@@ -98,5 +103,24 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
         }
 
         return "unkn";
+    }
+
+    /// <summary>
+    /// Gets the console color for a severity level.
+    /// </summary>
+    /// <param name="severity">The severity string.</param>
+    /// <returns>The console color for the severity.</returns>
+    private static ConsoleColor GetSeverityColor(string severity)
+    {
+        return severity switch
+        {
+            "trce" => ConsoleColor.Gray,
+            "dbug" => ConsoleColor.Cyan,
+            "info" => ConsoleColor.Green,
+            "warn" => ConsoleColor.Yellow,
+            "fail" => ConsoleColor.Red,
+            "crit" => ConsoleColor.Magenta,
+            _ => ConsoleColor.White,
+        };
     }
 }

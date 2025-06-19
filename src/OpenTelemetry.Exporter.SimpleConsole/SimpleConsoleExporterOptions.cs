@@ -11,7 +11,7 @@ namespace OpenTelemetry.Exporter.SimpleConsole;
 public class SimpleConsoleExporterOptions
 {
     /// <summary>
-    /// Gets or sets the text writer to use for output. Defaults to Console.Out.
+    /// Gets or sets the console to use for output. Defaults to SystemConsole.
     /// </summary>
-    public System.IO.TextWriter Writer { get; set; } = System.Console.Out;
+    public IConsole Console { get; set; } = new SystemConsole();
 }

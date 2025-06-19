@@ -39,4 +39,37 @@ public class SimpleConsoleIntegrationTests
         Assert.StartsWith("info: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());
         Assert.Equal($"      {message}", lines[1].TrimEnd());
     }
+
+    [Theory]
+    [InlineData(LogLevel.Trace, "TestApp", 1, "Trace message", "trce")]
+    [InlineData(LogLevel.Debug, "MyApp.Services", 42, "Debug message", "dbug")]
+    [InlineData(LogLevel.Information, "OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests", 0, "Info message", "info")]
+    [InlineData(LogLevel.Warning, "MyApp.Controllers", 100, "Warning message", "warn")]
+    [InlineData(LogLevel.Error, "MyApp.DataAccess", 500, "Error message", "fail")]
+    [InlineData(LogLevel.Critical, "MyApp.Startup", 999, "Critical message", "crit")]
+    public void LogLevelAndFormatTheoryTest(LogLevel logLevel, string category, int eventId, string message, string expectedSeverity)
+    {
+        // Arrange
+        using var stringWriter = new StringWriter();
+        using var loggerFactory = LoggerFactory.Create(logging => logging
+            .SetMinimumLevel(LogLevel.Trace)
+            .AddOpenTelemetry(options =>
+            {
+                options.AddSimpleConsoleExporter(configure =>
+                {
+                    configure.Writer = stringWriter;
+                });
+            }));
+
+        // Act
+        var logger = loggerFactory.CreateLogger(category);
+        logger.Log(logLevel, new EventId(eventId), message);
+
+        // Assert
+        var output = stringWriter.ToString();
+
+        var lines = Regex.Split(output, "\r?\n");
+        Assert.StartsWith($"{expectedSeverity}: {category}[{eventId}]", lines[0].Trim());
+        Assert.Equal($"      {message}", lines[1].TrimEnd());
+    }
 }

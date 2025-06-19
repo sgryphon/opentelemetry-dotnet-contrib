@@ -39,11 +39,21 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
                 ? logRecord.FormattedMessage
                 : logRecord.Body?.ToString() ?? string.Empty;
 
+            // Write timestamp if configured
+            if (!string.IsNullOrEmpty(this.options.TimestampFormat))
+            {
+                var now = this.options.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
+                var timestamp = now.ToString(this.options.TimestampFormat!);
+                console.Write(timestamp);
+            }
+
             // Write severity in color, then rest of the line in default color
-            var originalColor = console.ForegroundColor;
-            console.ForegroundColor = GetSeverityColor(severity);
+            var originalForeground = console.ForegroundColor;
+            var originalBackground = console.BackgroundColor;
+            SetSeverityColors(severity, console);
             console.Write(severity);
-            console.ForegroundColor = originalColor;
+            console.ForegroundColor = originalForeground;
+            console.BackgroundColor = originalBackground;
             console.WriteLine($": {category}[{eventId}]");
             console.WriteLine($"      {message}");
 
@@ -115,22 +125,35 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
         return "unkn";
     }
 
-    /// <summary>
-    /// Gets the console color for a severity level.
-    /// </summary>
-    /// <param name="severity">The severity string.</param>
-    /// <returns>The console color for the severity.</returns>
-    private static ConsoleColor GetSeverityColor(string severity)
+    private static void SetSeverityColors(string severity, IConsole console)
     {
-        return severity switch
+        switch (severity)
         {
-            "trce" => ConsoleColor.Gray,
-            "dbug" => ConsoleColor.Cyan,
-            "info" => ConsoleColor.Green,
-            "warn" => ConsoleColor.Yellow,
-            "fail" => ConsoleColor.Red,
-            "crit" => ConsoleColor.Magenta,
-            _ => ConsoleColor.White,
-        };
+            case "trce":
+            case "dbug":
+                console.ForegroundColor = ConsoleColor.Gray;
+                console.BackgroundColor = ConsoleColor.Black;
+                break;
+            case "info":
+                console.ForegroundColor = ConsoleColor.DarkGreen;
+                console.BackgroundColor = ConsoleColor.Black;
+                break;
+            case "warn":
+                console.ForegroundColor = ConsoleColor.Yellow;
+                console.BackgroundColor = ConsoleColor.Black;
+                break;
+            case "fail":
+                console.ForegroundColor = ConsoleColor.Black;
+                console.BackgroundColor = ConsoleColor.DarkRed;
+                break;
+            case "crit":
+                console.ForegroundColor = ConsoleColor.White;
+                console.BackgroundColor = ConsoleColor.DarkRed;
+                break;
+            default:
+                console.ForegroundColor = ConsoleColor.Gray;
+                console.BackgroundColor = ConsoleColor.Black;
+                break;
+        }
     }
 }

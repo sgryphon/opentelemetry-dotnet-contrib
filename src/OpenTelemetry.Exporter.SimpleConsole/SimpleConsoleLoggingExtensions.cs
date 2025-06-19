@@ -28,7 +28,6 @@ public static class SimpleConsoleLoggingExtensions
         var exporterOptions = new SimpleConsoleExporterOptions();
         configure?.Invoke(exporterOptions);
 
-        // TODO: Add processor with SimpleConsoleExporter
-        return options;
+        return options.AddProcessor(sp => new SimpleLogRecordExportProcessor(new SimpleConsoleExporter(exporterOptions)));
     }
 }

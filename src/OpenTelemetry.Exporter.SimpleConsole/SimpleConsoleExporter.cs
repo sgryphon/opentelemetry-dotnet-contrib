@@ -3,6 +3,7 @@
 
 #nullable enable
 
+using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
 
 namespace OpenTelemetry.Exporter.SimpleConsole;
@@ -26,7 +27,29 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
     /// <inheritdoc/>
     public override ExportResult Export(in Batch<LogRecord> batch)
     {
-        // TODO: Implement export logic
+        var writer = this.options.Writer ?? Console.Out;
+
+        foreach (var logRecord in batch)
+        {
+            var severity = GetSeverityString(logRecord.LogLevel);
+            var message = logRecord.FormattedMessage ?? string.Empty;
+            writer.WriteLine($"{severity}: {message}");
+        }
+
         return ExportResult.Success;
+    }
+
+    private static string GetSeverityString(LogLevel logLevel)
+    {
+        return logLevel switch
+        {
+            LogLevel.Trace => "trce",
+            LogLevel.Debug => "dbug",
+            LogLevel.Information => "info",
+            LogLevel.Warning => "warn",
+            LogLevel.Error => "fail",
+            LogLevel.Critical => "crit",
+            _ => "info",
+        };
     }
 }

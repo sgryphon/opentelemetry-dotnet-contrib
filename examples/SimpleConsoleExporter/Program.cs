@@ -58,7 +58,11 @@ public class Program
                 builder.ConfigureLogging(logging =>
                 {
                     logging.ClearProviders();
-                    logging.AddOpenTelemetry(options => options.AddConsoleExporter());
+                    logging.AddOpenTelemetry(options =>
+                    {
+                        options.IncludeFormattedMessage = true;
+                        options.AddConsoleExporter();
+                    });
                     logging.SetMinimumLevel(LogLevel.Trace);
                 });
                 break;
@@ -67,7 +71,11 @@ public class Program
                 builder.ConfigureLogging(logging =>
                 {
                     logging.ClearProviders();
-                    logging.AddOpenTelemetry(options => options.AddSimpleConsoleExporter());
+                    logging.AddOpenTelemetry(options =>
+                    {
+                        options.IncludeFormattedMessage = true;
+                        options.AddSimpleConsoleExporter();
+                    });
                     logging.SetMinimumLevel(LogLevel.Trace);
                 });
                 break;

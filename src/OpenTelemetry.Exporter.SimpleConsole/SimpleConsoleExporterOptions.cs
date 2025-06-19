@@ -24,4 +24,14 @@ public class SimpleConsoleExporterOptions
     /// Gets or sets a value indicating whether to use UTC timestamps. If false, local time is used.
     /// </summary>
     public bool UseUtcTimestamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to include the trace ID in the output. Defaults to true.
+    /// </summary>
+    public bool IncludeTraceId { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to include the span ID in the output. Defaults to false.
+    /// </summary>
+    public bool IncludeSpanId { get; set; } = false;
 }

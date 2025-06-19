@@ -55,7 +55,23 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
             console.Write(severity);
             console.ForegroundColor = originalForeground;
             console.BackgroundColor = originalBackground;
-            console.WriteLine($": {category}[{eventId}]");
+
+            // Build the first line with optional trace and span IDs
+            var firstLine = $": {category}[{eventId}]";
+
+            // Add trace ID if configured and available
+            if (this.options.IncludeTraceId && logRecord.TraceId != default)
+            {
+                firstLine += $" {logRecord.TraceId.ToHexString()}";
+
+                // Add span ID if configured and available
+                if (this.options.IncludeSpanId && logRecord.SpanId != default)
+                {
+                    firstLine += $"-{logRecord.SpanId.ToHexString()}";
+                }
+            }
+
+            console.WriteLine(firstLine);
             console.WriteLine($"      {message}");
 
             // Output exception details if present, indented

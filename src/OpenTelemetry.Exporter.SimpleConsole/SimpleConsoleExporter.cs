@@ -56,15 +56,23 @@ public class SimpleConsoleExporter : BaseExporter<LogRecord>
             console.ForegroundColor = originalForeground;
             console.BackgroundColor = originalBackground;
 
-            // Build the first line with optional trace and span IDs
+            // Build the first line with trace/span ID if configured
             var firstLine = $": {category}[{eventId}]";
 
-            // Add trace ID if configured and available
             if (this.options.IncludeTraceId && logRecord.TraceId != default)
             {
-                firstLine += $" {logRecord.TraceId.ToHexString()}";
+                var traceIdHex = logRecord.TraceId.ToHexString();
+                var truncatedLength = Math.Min(this.options.TraceIdLength, 32);
+                var displayTraceId = traceIdHex.Substring(0, truncatedLength);
 
-                // Add span ID if configured and available
+                // Only show ".." if significantly truncated (length < 30)
+                if (this.options.TraceIdLength < 30)
+                {
+                    displayTraceId += "..";
+                }
+
+                firstLine += $" {displayTraceId}";
+
                 if (this.options.IncludeSpanId && logRecord.SpanId != default)
                 {
                     firstLine += $"-{logRecord.SpanId.ToHexString()}";

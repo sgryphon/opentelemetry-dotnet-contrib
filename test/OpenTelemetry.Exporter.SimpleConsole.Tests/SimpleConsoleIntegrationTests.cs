@@ -38,7 +38,7 @@ public class SimpleConsoleIntegrationTests
 
         // First line should NOT contain trace ID when no activity is present
         Assert.StartsWith("info: OpenTelemetry.Exporter.SimpleConsole.Tests.SimpleConsoleIntegrationTests[0]", lines[0].Trim());
-        Assert.DoesNotMatch(@"info: .*\[0\] [0-9a-f]{32}$", lines[0].Trim());
+        Assert.DoesNotMatch(@"info: .*\[0\] [0-9a-f]+$", lines[0].Trim());
         Assert.Equal($"      Test log message from SimpleConsole exporter", lines[1].TrimEnd());
 
         // Verify color changes: fg and bg for severity, then restore both
@@ -207,21 +207,23 @@ public class SimpleConsoleIntegrationTests
         using var activitySource = new ActivitySource("TestActivitySource");
         using var activity = activitySource.StartActivity("TestActivity");
 
+        // Log the activity ID in the message, as in the example
         logger.LogInformation("Activity {ActivityId} started", activity?.Id);
 
         // Assert
         var output = mockConsole.GetOutput();
-        var lines = Regex.Split(output, "\r?\n");
+        var lines = output.Split('\n');
 
-        // First line should contain the trace ID (default configuration)
-        var firstLine = lines.FirstOrDefault(l => l.Contains("info:"));
-        Assert.NotNull(firstLine);
-        Assert.Matches(@"info: .*\[0\] [0-9a-f]{32}$", firstLine);
+        // Check that we have at least 2 lines (first line + message)
+        Assert.True(lines.Length >= 2, $"Expected at least 2 lines, got {lines.Length}");
 
-        // Second line should contain the activity message
-        var secondLine = lines.FirstOrDefault(l => l.Contains("Activity"));
-        Assert.NotNull(secondLine);
-        Assert.Matches(@"Activity 00-[0-9a-f]{32}-[0-9a-f]{16}-00 started", secondLine);
+        // Check first line contains trace ID with ".." (default length 8 < 30)
+        var firstLine = lines[0].TrimEnd();
+        Assert.Matches(@"info: .*\[\d+\] [0-9a-f]{8}\.\.", firstLine);
+
+        // Check second line contains the activity message
+        var messageLine = lines[1].TrimEnd();
+        Assert.Matches(@"Activity 00-[0-9a-f]{32}-[0-9a-f]{16}-00 started", messageLine);
     }
 
     [Fact]
@@ -242,6 +244,7 @@ public class SimpleConsoleIntegrationTests
                 {
                     configure.Console = mockConsole;
                     configure.IncludeSpanId = true;
+                    configure.TraceIdLength = 32; // Full trace ID length
                 });
             }));
 
@@ -261,5 +264,42 @@ public class SimpleConsoleIntegrationTests
         var firstLine = lines.FirstOrDefault(l => l.Contains("info:"));
         Assert.NotNull(firstLine);
         Assert.Matches(@"info: .*\[0\] [0-9a-f]{32}-[0-9a-f]{16}$", firstLine);
+    }
+
+    [Fact]
+    public void TraceIdLengthTest()
+    {
+        // Arrange
+        var mockConsole = new MockConsole();
+        var listener = new ActivityListener
+        {
+            ShouldListenTo = _ => true,
+            Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
+        };
+        ActivitySource.AddActivityListener(listener);
+        using var loggerFactory = LoggerFactory.Create(logging => logging
+            .AddOpenTelemetry(options =>
+            {
+                options.AddSimpleConsoleExporter(configure =>
+                {
+                    configure.Console = mockConsole;
+                    configure.TraceIdLength = 16;
+                });
+            }));
+
+        // Act
+        var logger = loggerFactory.CreateLogger<SimpleConsoleIntegrationTests>();
+        using var activitySource = new ActivitySource("TestActivitySource");
+        using var activity = activitySource.StartActivity("TestActivity");
+
+        logger.LogInformation("Test message");
+
+        // Assert
+        var output = mockConsole.GetOutput();
+        var lines = output.Split('\n');
+
+        // Check first line contains trace ID
+        var firstLine = lines[0].TrimEnd();
+        Assert.Matches(@"info: .*\[\d+\] [0-9a-f]{16}\.\.$", firstLine);
     }
 }

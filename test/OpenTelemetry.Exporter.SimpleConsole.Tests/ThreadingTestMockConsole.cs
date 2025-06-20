@@ -20,6 +20,7 @@ internal class ThreadingTestMockConsole : IConsole
         {
             this.foregroundColor = value;
             this.Calls.Enqueue($"Foreground:{value}");
+            Thread.Sleep(value == ConsoleColor.Yellow ? 200 : 5); // longer for warning
         }
     }
 
@@ -41,10 +42,12 @@ internal class ThreadingTestMockConsole : IConsole
     public void Write(string value)
     {
         this.Calls.Enqueue($"Write:{value}");
+        Thread.Sleep(value.Contains("warn", StringComparison.OrdinalIgnoreCase) ? 200 : 5);
     }
 
     public void WriteLine(string value)
     {
         this.Calls.Enqueue($"WriteLine:{value}");
+        Thread.Sleep(value.Contains("warn", StringComparison.OrdinalIgnoreCase) ? 400 : 5);
     }
 }

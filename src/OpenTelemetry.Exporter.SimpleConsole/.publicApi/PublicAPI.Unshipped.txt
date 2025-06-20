@@ -29,3 +29,9 @@ OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.TimestampForma
 OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.TimestampFormat.set -> void
 OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.UseUtcTimestamp.get -> bool
 OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.UseUtcTimestamp.set -> void
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.IncludeTraceId.get -> bool
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.IncludeTraceId.set -> void
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.IncludeSpanId.get -> bool
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.IncludeSpanId.set -> void
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.TraceIdLength.get -> int
+OpenTelemetry.Exporter.SimpleConsole.SimpleConsoleExporterOptions.TraceIdLength.set -> void
